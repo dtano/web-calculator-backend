@@ -1,16 +1,23 @@
 ﻿using WebApplication1.Contracts.Authentication;
 using WebApplication1.Models;
+using WebApplication1.Repositories;
 using WebApplication1.Utils;
 
 namespace WebApplication1.Services
 {
     public class UserService : IUserService
     {
+        private readonly IUserRepository _userRepository;
+
+        public UserService(IUserRepository userRepository)
+        {
+            _userRepository = userRepository;
+        }
+
         public RegisterUserResponse CreateUser(RegisterUserRequest req)
         {
-            Console.WriteLine("CALL CREATE USER");
             // Validate here
-
+            ValidateRegisterUserRequest(req);
 
             // Now create user
             var encryptedPassword = EncryptionUtils.Encrypt(req.Password);
@@ -18,8 +25,8 @@ namespace WebApplication1.Services
                 Guid.NewGuid(),
                 req.Name,
                 req.Email,
-                encryptedPassword, // Password needs to be encrypted
-                req.CreditCardNumber,
+                encryptedPassword,
+                req.CreditCardNumber.Substring(req.CreditCardNumber.Length - 4), // Only save the last 4 characters
                 req.ExpiryDate, // Convert string to date time
                 DateTime.UtcNow,
                 DateTime.UtcNow
@@ -28,6 +35,7 @@ namespace WebApplication1.Services
             // Attempt to make stripe payment
 
             // If successful, then save to database
+            _userRepository.Save(newUser);
 
             var response = new RegisterUserResponse(
                 newUser.Id,
@@ -44,7 +52,11 @@ namespace WebApplication1.Services
         private void ValidateRegisterUserRequest(RegisterUserRequest req)
         {
             // Check if a user with the given email already exists
-
+            User existingUser = _userRepository.FindUserByEmail(req.Email);
+            if(existingUser != null)
+            {
+                throw new Exception("A user with the given email already exists");
+            }
 
 
             // Check credit card details here?
