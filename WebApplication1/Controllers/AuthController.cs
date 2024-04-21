@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Contracts.Authentication;
-using WebApplication1.Models;
 using WebApplication1.Services;
 
 namespace WebApplication1.Controllers
@@ -21,8 +20,14 @@ namespace WebApplication1.Controllers
         [HttpPost("register")]
         public IActionResult Register(RegisterUserRequest request)
         {
-            var response = _userService.CreateUser(request);
-            return Ok(response);
+            try
+            {
+                var response = _userService.CreateUser(request);
+                return Ok(response);
+            }catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPost("login")]

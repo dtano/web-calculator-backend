@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Json.Net" Version="1.0.33" />
+    <PackageReference Include="sib_api_v3_sdk" Version="4.0.2" />
     <PackageReference Include="Stripe.net" Version="44.3.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
   </ItemGroup>

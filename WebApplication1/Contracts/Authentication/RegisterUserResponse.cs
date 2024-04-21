@@ -2,19 +2,17 @@
 {
     public record RegisterUserResponse
     {
-        public Guid id;
-        public string Name;
-        public string Email;
-        public string Password;
-        public string CreditCardNumber;
-        public DateTime ExpiryDate;
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string Email { get; set; }
+        public string CreditCardNumber { get; set; }
+        public DateTime ExpiryDate { get; set; }
 
-        public RegisterUserResponse(Guid id, string name, string email, string password, string creditCardNumber, DateTime expiryDate)
+        public RegisterUserResponse(Guid id, string name, string email, string creditCardNumber, DateTime expiryDate)
         {
-            this.id = id;
+            Id = id;
             Name = name;
             Email = email;
-            Password = password;
             CreditCardNumber = creditCardNumber;
             ExpiryDate = expiryDate;
         }

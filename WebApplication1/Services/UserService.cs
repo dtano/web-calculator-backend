@@ -2,16 +2,20 @@
 using WebApplication1.Models;
 using WebApplication1.Repositories;
 using WebApplication1.Utils;
+using System.Web;
+using WebApplication1.Contracts.Email;
 
 namespace WebApplication1.Services
 {
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IMailService _mailService;
 
-        public UserService(IUserRepository userRepository)
+        public UserService(IUserRepository userRepository, IMailService mailService)
         {
             _userRepository = userRepository;
+            _mailService = mailService;
         }
 
         public RegisterUserResponse CreateUser(RegisterUserRequest req)
@@ -20,7 +24,10 @@ namespace WebApplication1.Services
             ValidateRegisterUserRequest(req);
 
             // Now create user
-            var encryptedPassword = EncryptionUtils.Encrypt(req.Password);
+            var password = RandomUtils.GenerateRandomPassword();
+            var encryptedPassword = EncryptionUtils.Encrypt(password);
+            
+            
             var newUser = new User(
                 Guid.NewGuid(),
                 req.Name,
@@ -37,17 +44,30 @@ namespace WebApplication1.Services
             // If successful, then save to database
             _userRepository.Save(newUser);
 
+            // Send email to user
+            _mailService.SendMail(CreateWelcomeEmailData(req.Email, req.Name, password));
+
             var response = new RegisterUserResponse(
                 newUser.Id,
                 newUser.Name,
                 newUser.Email,
-                newUser.Password,
                 newUser.CreditCardNumber,
                 newUser.ExpiryDate
             );
             
             return response;
         }
+
+        private MailData CreateWelcomeEmailData(string targetEmail, string userName, string password)
+        {
+            MailData mailData = new MailData();
+            mailData.ReceiverEmail = targetEmail;
+            mailData.ReceiverName = userName;
+            mailData.EmailSubject = "Welcome to the Premium Program";
+            mailData.EmailBody = $"We would like to welcome you to Web Calculator Premium!\n This is your login password: {password}.\n\n Regards,\nWeb Calculator Team";
+
+            return mailData;
+        }   
 
         private void ValidateRegisterUserRequest(RegisterUserRequest req)
         {
@@ -58,8 +78,6 @@ namespace WebApplication1.Services
                 throw new Exception("A user with the given email already exists");
             }
 
-
-            // Check credit card details here?
 
             // Check length of credit card number
             if(req.CreditCardNumber.Length != 16)
