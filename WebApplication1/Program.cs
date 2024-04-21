@@ -1,32 +1,11 @@
 using sib_api_v3_sdk.Client;
 using WebApplication1.Contracts;
+using WebApplication1.Contracts.Payment;
 using WebApplication1.Repositories;
 using WebApplication1.Services;
 
-//var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
 var builder = WebApplication.CreateBuilder(args);
-//{
-//    builder.Services.AddCors(options =>
-//    {
-//        options.AddPolicy(name: MyAllowSpecificOrigins,
-//                          policy =>
-//                          {
-//                              policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
-//                          });
-//    });
-//    builder.Services.AddControllers();
-//    builder.Services.AddScoped<IUserService, UserService>();
-//}
-
-//var app = builder.Build();
-//{
-//    app.UseHttpsRedirection();
-//    //app.UseAuthorization();
-//    app.UseCors(MyAllowSpecificOrigins);
-//    app.MapControllers();
-//    app.Run();
-//}
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
@@ -46,10 +25,14 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("BrevoApi"));
+builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("StripeSettings"));
+
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IMailService, MailService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 var app = builder.Build();
 
@@ -60,13 +43,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-//app.UseHttpsRedirection();
-
-//app.UseRouting();
-
 app.UseCors(MyAllowSpecificOrigins); // Placed after UseRouting and before UseAuthorization
-
-//app.UseAuthorization();
 
 app.MapControllers();
 

@@ -39,7 +39,7 @@ namespace WebApplication1.Services
             }
             catch (Exception e)
             {
-                return false;
+                throw new Exception("Failed to send welcome email: " + e.Message);
             }
         }
     }

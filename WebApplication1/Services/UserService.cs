@@ -4,6 +4,8 @@ using WebApplication1.Repositories;
 using WebApplication1.Utils;
 using System.Web;
 using WebApplication1.Contracts.Email;
+using Stripe;
+using WebApplication1.Contracts.Payment;
 
 namespace WebApplication1.Services
 {
@@ -11,11 +13,13 @@ namespace WebApplication1.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IMailService _mailService;
+        private readonly IPaymentService _paymentService;
 
-        public UserService(IUserRepository userRepository, IMailService mailService)
+        public UserService(IUserRepository userRepository, IMailService mailService, IPaymentService paymentService)
         {
             _userRepository = userRepository;
             _mailService = mailService;
+            _paymentService = paymentService;
         }
 
         public RegisterUserResponse CreateUser(RegisterUserRequest req)
@@ -23,29 +27,32 @@ namespace WebApplication1.Services
             // Validate here
             ValidateRegisterUserRequest(req);
 
+            CreditCardInfo creditCardInfo = _paymentService.ExtractCreditCardInfoFromToken(req.ConfirmationToken);
+
+            // Attempt to make stripe payment
+            // If unsuccessful then stop
+            PaymentResponse paymentResponse = _paymentService.MakePayment(req.ConfirmationToken);
+
             // Now create user
             var password = RandomUtils.GenerateRandomPassword();
             var encryptedPassword = EncryptionUtils.Encrypt(password);
-            
-            
+
             var newUser = new User(
                 Guid.NewGuid(),
                 req.Name,
                 req.Email,
                 encryptedPassword,
-                req.CreditCardNumber.Substring(req.CreditCardNumber.Length - 4), // Only save the last 4 characters
-                req.ExpiryDate, // Convert string to date time
+                creditCardInfo.Number, // Only save the last 4 characters
+                creditCardInfo.ExpiryDate, // Convert string to date time
                 DateTime.UtcNow,
                 DateTime.UtcNow
             );
 
-            // Attempt to make stripe payment
+            // Send email to user
+            _mailService.SendMail(CreateWelcomeEmailData(req.Email, req.Name, password));
 
             // If successful, then save to database
             _userRepository.Save(newUser);
-
-            // Send email to user
-            _mailService.SendMail(CreateWelcomeEmailData(req.Email, req.Name, password));
 
             var response = new RegisterUserResponse(
                 newUser.Id,
@@ -76,25 +83,6 @@ namespace WebApplication1.Services
             if(existingUser != null)
             {
                 throw new Exception("A user with the given email already exists");
-            }
-
-
-            // Check length of credit card number
-            if(req.CreditCardNumber.Length != 16)
-            {
-                throw new Exception("Credit card number should be 16 characters long");
-            }
-
-            // Check CVC of credit cad
-            if(req.Cvc.Length != 3)
-            {
-                throw new Exception("CVC should comprise of 3 numbers");
-            }
-
-            // Check if card is already expired
-            if(DateTime.UtcNow > req.ExpiryDate.ToUniversalTime())
-            {
-                throw new Exception("Given credit card is already expired");
             }
         }
 

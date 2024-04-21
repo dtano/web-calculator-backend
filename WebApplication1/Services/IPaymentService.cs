@@ -4,6 +4,7 @@ namespace WebApplication1.Services
 {
     public interface IPaymentService
     {
-        PaymentResponse MakePayment(string creditCardNumber, string cvc);
+        PaymentResponse MakePayment(string confirmationToken);
+        CreditCardInfo ExtractCreditCardInfoFromToken(string confirmationToken);
     }
 }
