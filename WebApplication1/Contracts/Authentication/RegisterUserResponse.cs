@@ -7,14 +7,16 @@
         public string Email { get; set; }
         public string CreditCardNumber { get; set; }
         public DateTime ExpiryDate { get; set; }
+        public string JwtToken { get; set; }
 
-        public RegisterUserResponse(Guid id, string name, string email, string creditCardNumber, DateTime expiryDate)
+        public RegisterUserResponse(Guid id, string name, string email, string creditCardNumber, DateTime expiryDate, string jwtToken)
         {
             Id = id;
             Name = name;
             Email = email;
             CreditCardNumber = creditCardNumber;
             ExpiryDate = expiryDate;
+            JwtToken = jwtToken;
         }
     }
 }

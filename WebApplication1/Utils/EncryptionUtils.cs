@@ -5,55 +5,57 @@ namespace WebApplication1.Utils
 {
     public class EncryptionUtils
     {
-        public static string SecretKey = "secret-key-for-app";
+        public static string SecretKey = "b14ca5898a4e4133bbce2ea2315a1916";
         public static string Encrypt(string plainText)
         {
-            try
+            byte[] iv = new byte[16];
+            byte[] array;
+
+            using (Aes aes = Aes.Create())
             {
-                // Convert the plaintext string to a byte array
-                byte[] plaintextBytes = Encoding.UTF8.GetBytes(plainText);
+                aes.Key = Encoding.UTF8.GetBytes(SecretKey);
+                aes.IV = iv;
 
-                // Derive a new password using the PBKDF2 algorithm and a random salt
-                Rfc2898DeriveBytes passwordBytes = new Rfc2898DeriveBytes(SecretKey, 20);
+                ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
 
-                // Use the password to encrypt the plaintext
-                Aes encryptor = Aes.Create();
-                encryptor.Key = passwordBytes.GetBytes(32);
-                encryptor.IV = passwordBytes.GetBytes(16);
-                using (MemoryStream ms = new MemoryStream())
+                using (MemoryStream memoryStream = new MemoryStream())
                 {
-                    using (CryptoStream cs = new CryptoStream(ms, encryptor.CreateEncryptor(), CryptoStreamMode.Write))
+                    using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, encryptor, CryptoStreamMode.Write))
                     {
-                        cs.Write(plaintextBytes, 0, plaintextBytes.Length);
+                        using (StreamWriter streamWriter = new StreamWriter((Stream)cryptoStream))
+                        {
+                            streamWriter.Write(plainText);
+                        }
+
+                        array = memoryStream.ToArray();
                     }
-                    return Convert.ToBase64String(ms.ToArray());
                 }
             }
-            catch (Exception ex)
-            {
-                throw new Exception("Error in encryption" + ex.Message);
-            }
+
+            return Convert.ToBase64String(array);
         }
 
-        public string Decode(string encryptedData)
+        public static string Decrypt(string cipherText)
         {
-            // Convert the encrypted string to a byte array
-            byte[] encryptedBytes = Convert.FromBase64String(encryptedData);
+            byte[] iv = new byte[16];
+            byte[] buffer = Convert.FromBase64String(cipherText);
 
-            // Derive the password using the PBKDF2 algorithm
-            Rfc2898DeriveBytes passwordBytes = new Rfc2898DeriveBytes(SecretKey, 20);
-
-            // Use the password to decrypt the encrypted string
-            Aes encryptor = Aes.Create();
-            encryptor.Key = passwordBytes.GetBytes(32);
-            encryptor.IV = passwordBytes.GetBytes(16);
-            using (MemoryStream ms = new MemoryStream())
+            using (Aes aes = Aes.Create())
             {
-                using (CryptoStream cs = new CryptoStream(ms, encryptor.CreateDecryptor(), CryptoStreamMode.Write))
+                aes.Key = Encoding.UTF8.GetBytes(SecretKey);
+                aes.IV = iv;
+                ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+
+                using (MemoryStream memoryStream = new MemoryStream(buffer))
                 {
-                    cs.Write(encryptedBytes, 0, encryptedBytes.Length);
+                    using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, decryptor, CryptoStreamMode.Read))
+                    {
+                        using (StreamReader streamReader = new StreamReader((Stream)cryptoStream))
+                        {
+                            return streamReader.ReadToEnd();
+                        }
+                    }
                 }
-                return Encoding.UTF8.GetString(ms.ToArray());
             }
         }
     }

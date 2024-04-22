@@ -42,8 +42,8 @@ namespace WebApplication1.Services
                 req.Name,
                 req.Email,
                 encryptedPassword,
-                creditCardInfo.Number, // Only save the last 4 characters
-                creditCardInfo.ExpiryDate, // Convert string to date time
+                creditCardInfo.Number,
+                creditCardInfo.ExpiryDate,
                 DateTime.UtcNow,
                 DateTime.UtcNow
             );
@@ -54,12 +54,16 @@ namespace WebApplication1.Services
             // If successful, then save to database
             _userRepository.Save(newUser);
 
+            // Create login token
+            var jwtToken = AuthUtils.GenerateJwtToken(req.Email);
+
             var response = new RegisterUserResponse(
                 newUser.Id,
                 newUser.Name,
                 newUser.Email,
                 newUser.CreditCardNumber,
-                newUser.ExpiryDate
+                newUser.ExpiryDate,
+                jwtToken
             );
             
             return response;
@@ -71,7 +75,7 @@ namespace WebApplication1.Services
             mailData.ReceiverEmail = targetEmail;
             mailData.ReceiverName = userName;
             mailData.EmailSubject = "Welcome to the Premium Program";
-            mailData.EmailBody = $"We would like to welcome you to Web Calculator Premium!\n This is your login password: {password}.\n\n Regards,\nWeb Calculator Team";
+            mailData.EmailBody = $"We would like to welcome you to Web Calculator Premium!\n This is your login password: {password}\n\n Regards,\nWeb Calculator Team";
 
             return mailData;
         }   
@@ -86,9 +90,44 @@ namespace WebApplication1.Services
             }
         }
 
+        private void ValidateLoginRequest(LoginRequest req)
+        {
+            if(req.Email == null || req.Email.Length == 0)
+            {
+                throw new Exception("Email field cannot be empty");
+            }
+
+            if (req.Password == null || req.Password.Length == 0)
+            {
+                throw new Exception("Password field cannot be empty");
+            }
+
+            User existingUser = _userRepository.FindUserByEmail(req.Email);
+            if(existingUser == null)
+            {
+                throw new Exception($"User with the given email does not exist");
+            }
+
+            // Now compare the passwords
+            var decryptedPassword = EncryptionUtils.Decrypt(existingUser.Password);
+            if(req.Password != decryptedPassword)
+            {
+                throw new Exception("Wrong password. Please try again");
+            }
+        }
+
         public LoginResponse Login(LoginRequest req)
         {
-            throw new NotImplementedException();
+            // Make sure email and password are not empty
+            ValidateLoginRequest(req);
+
+            string jwtToken = AuthUtils.GenerateJwtToken(req.Email);
+            LoginResponse response = new LoginResponse
+            {
+                Token = jwtToken
+            };
+
+            return response;
         }
     }
 }

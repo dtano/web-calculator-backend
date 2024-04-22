@@ -24,7 +24,8 @@ namespace WebApplication1.Controllers
             {
                 var response = _userService.CreateUser(request);
                 return Ok(response);
-            }catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -33,7 +34,15 @@ namespace WebApplication1.Controllers
         [HttpPost("login")]
         public IActionResult Login(LoginRequest request)
         {
-            return Ok(request);
+            try
+            {
+                var response = _userService.Login(request);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }
